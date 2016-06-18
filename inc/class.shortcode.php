@@ -14,16 +14,23 @@ class CSST_WAD_Shortcode {
 
 	}
 
-	public function shortcode( $atts, $content = null ) {
+	public function auth() {
+		$args['headers']['Authorization'] = 'Basic ' . base64_encode( "$username:$password" );
+	}
+
+	public function shortcode( $atts ) {
+
+	    $a = shortcode_atts( array(
+    	    'url'   => FALSE,
+    	    'basic' => FALSE,
+    	), $atts );
 
 		$out = '';
    
-		$response = wp_remote_get( $content );
+		$response = wp_remote_get( $a['url'] );
 
 		foreach( $response as $k => $v ) {
-
 			$out .= $this -> stringify( $k, $v );
-
 		}
 
 		$out = "<div class='csst_wad_shortcode'>$out</div>";
@@ -49,11 +56,11 @@ class CSST_WAD_Shortcode {
 		// If it's scalar, great, time to just log it.
 		if( is_scalar( $v ) ) {
 
-			$out .= esc_html( $v ) . '</li>';
+			$out .= esc_html( $v ) . '</li>' . PHP_EOL;
 
 		} elseif( is_null( $v ) ) {
 
-			$out .= '(null)' . '</li>';
+			$out .= '(null)' . '</li>' . PHP_EOL;
 
 		// If it's an array...
 		} elseif( is_array( $v ) ) {
@@ -66,9 +73,11 @@ class CSST_WAD_Shortcode {
 
 			}
 
+			$out .= '</li>' . PHP_EOL;
+
 		} 
 
-		$out = "$out</li></ul>";
+		$out = "$out</ul>" . PHP_EOL;
 
 		return $out;
 
