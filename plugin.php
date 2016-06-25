@@ -54,5 +54,3 @@ define( 'CSST_WAD_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 foreach( glob( CSST_WAD_PLUGIN_DIR . 'inc/*.php' ) as $filename ) {
     require_once( $filename );
 }
-
-require_once( CSST_WAD_PLUGIN_DIR . 'lib/OAuth/bootstrap.php' );

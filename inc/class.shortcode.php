@@ -6,13 +6,14 @@ class CSST_WAD_Shortcode {
 
 	public function __construct() {
 
-		$this -> wp_site_url         = 'http://scottfennell.com/css-tricks-wp-api-control';
-		$this -> wp_api_path         = '/wp-json/wp/v2';
-		$this -> key                 = '3AcNVuX3C0cS';
-		$this -> secret              = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
+		$this -> url          = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/wp/v2';
+		$this -> consumer_key                 = '3AcNVuX3C0cS';
+		$this -> consumer_secret              = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
 		$this -> access_token        = 'HyHoB8Ln6PVPX85CG6npIIgy';
 		$this -> access_token_secret = 'B83NPbuAfra9pkH8aNDmE98902CHYf7t5hAq1Fc5Npr7Admm';
 
+		$this -> method = 'GET';
+		
 		add_shortcode( 'csst_wad', array( $this, 'shortcode' ) );
 
 	}
@@ -26,12 +27,7 @@ class CSST_WAD_Shortcode {
 
 		$out = '';
 
-		$url = $this -> wp_site_url . $this -> wp_api_path . '/posts/5';
-
-		$response = $this -> oauthRequest(
-			$url,
-			'GET'
-		);
+		$response = $this -> get_response();
 
 		wp_die( var_dump( $response ) );
 
@@ -97,57 +93,54 @@ class CSST_WAD_Shortcode {
 
 		if( ! is_string( $string ) ) { return FALSE; }
 
-		json_decode($string);
-		return (json_last_error() == JSON_ERROR_NONE);
+		json_decode( $string );
+		
+		$json_last_error = json_last_error();
+		
+		if( $json_last_error == JSON_ERROR_NONE ) { return TRUE; }
+
+		return FALSE;
+	
 	}
 
-	function oauthRequest( $url, $method ) {
+	function get_response() {
 		
 		// The keys need to be alphabetical.
 		$params = array(
-			'oauth_consumer_key'     => $this -> key,
-			'oauth_nonce'            => wp_create_nonce( time() . rand() . $url . $method ),
+			'oauth_consumer_key'     => $this -> consumer_key,
+			'oauth_nonce'            => wp_create_nonce( time() . rand() . $this -> url . $this -> url ),
 			'oauth_signature_method' => "HMAC-SHA1",
 			'oauth_timestamp'        => time(),
 			'oauth_token'            => $this -> access_token,
 			'oauth_version'          => "1.0",
 		);
-		
-		// Convert params to string 
-		foreach ($params as $k => $v) {    
-			$pairs[] = $this->_urlencode_rfc3986($k).'='.$this->_urlencode_rfc3986($v);
-		}
-		$concatenatedParams = implode('&', $pairs);
-		$concatenatedParams = str_replace('=', '%3D', $concatenatedParams);
-		$concatenatedParams = str_replace('&', '%26', $concatenatedParams);
-		
-		// Form base string (first key)
-		// echo '<h4>concatenated params</h4><pre>'.$concatenatedParams.'</pre>';
-		// base string should never use the '?' even if it has one in a GET query
-		// See : https://developers.google.com/accounts/docs/OAuth_ref#SigningOAuth
-		$base_string = $method."&".urlencode($url)."&".$concatenatedParams;
-	
-		// Form secret (second key)
-		$secret = urlencode($this->secret)."&".$this -> access_token_secret; // concatentate the oauth_token_secret (null when doing initial '1st leg' request token)
-	
+
 		// Make signature and append to params
-		$params['oauth_signature'] = $this -> get_signature( $base_string, $secret );        
+		$params['oauth_signature'] = $this -> get_signature( $params );        
 		
 		// Build OAuth Authorization header from oauth_* parameters only.
 		$headers = $this->get_headers( $params );
 		
 		$args = array(
-			'method' => $method,
+			'method' => $this -> method,
 			'headers' => $headers,
 		);
-		$json_response = wp_remote_request( $url, $args );
+		$json_response = wp_remote_request( $this -> url, $args );
 
 		// Result JSON
 		return $json_response;
 
 	}
   
-	function get_base_string( $method, $url, $params ) {
+	function get_signature_key() {
+		
+		$out = urlencode( $this -> consumer_secret ) . "&" . $this -> access_token_secret;
+
+		return $out;
+
+	}
+
+	function get_base_string( $params ) {
 
 		$params_str = '';
 
@@ -155,17 +148,22 @@ class CSST_WAD_Shortcode {
 		foreach ( $params as $k => $v ) {    
 			$params_str .= $this -> _urlencode_rfc3986( $k ) . '%3D' . $this -> _urlencode_rfc3986( $v ) . '%26';
 		}
-		$params_str = rtrim( $params_str, '&' );
+		$params_str = rtrim( $params_str, '%26' );
 
-		$out = $method . '&' . urlencode( $url ) . '&' . $params_str;
+		$out = $this -> method . '&' . urlencode( $this -> url ) . '&' . $params_str;
 
 		return $out;
 
 	}
   
-	function get_signature( $base_string, $secret ) {
+	function get_signature( $params ) {
 
-		$out = hash_hmac( 'sha1', $base_string, $secret, TRUE );
+		$base_string = $this -> get_base_string( $params );
+
+		// Form secret (second key)
+		$signature_key = $this -> get_signature_key();
+
+		$out = hash_hmac( 'sha1', $base_string, $signature_key, TRUE );
 
 		$out = base64_encode( $out );
 
