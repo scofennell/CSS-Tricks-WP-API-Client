@@ -180,7 +180,7 @@ class CSST_WAD_Shortcode {
 
 		// Convert params to string 
 		foreach ( $this -> headers as $k => $v ) {    
-			$params_str .= $k . '=' . $v . '&';
+			$params_str .= $k . '=' . urlencode( $v ) . '&';
 		}
 		$params_str = rtrim( $params_str, '&' );
 
