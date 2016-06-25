@@ -1,29 +1,43 @@
 <?php
 
-new CSST_WAD_Shortcode;
+function CSST_WAD_Shortcode_init() {
+	new CSST_WAD_Shortcode;
+}
+add_action( 'plugins_loaded', 'CSST_WAD_Shortcode_init' );
 
 class CSST_WAD_Shortcode {
 
 	public function __construct() {
 
-		$this -> url          = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/wp/v2';
-		$this -> consumer_key                 = '3AcNVuX3C0cS';
-		$this -> consumer_secret              = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
+		$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/wp/v2/posts/5';
+		$this -> meta_key            = FALSE;
+		$this -> consumer_key        = '3AcNVuX3C0cS';
+		$this -> consumer_secret     = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
 		$this -> access_token        = 'HyHoB8Ln6PVPX85CG6npIIgy';
 		$this -> access_token_secret = 'B83NPbuAfra9pkH8aNDmE98902CHYf7t5hAq1Fc5Npr7Admm';
+		$this -> method              = 'GET';
 
-		$this -> method = 'GET';
-		
+		$this -> set_signature_key();
+		$this -> set_nonce();
+		$this -> set_headers();
+		$this -> set_base_string();
+		$this -> set_signature();
+		$this -> set_headers();
+		$this -> set_header_string();
+
 		add_shortcode( 'csst_wad', array( $this, 'shortcode' ) );
 
 	}
 
 	public function shortcode( $atts ) {
 
-		/*$a = shortcode_atts( array(
-			'url'   => FALSE,
-			'basic' => FALSE,
-		), $atts );*/
+		$a = shortcode_atts( array(
+			'meta_key'   => FALSE,
+		), $atts );
+
+		if( ! empty( $a['meta_key'] ) ) {
+			$this -> meta_key = $a['meta_key'];
+		}
 
 		$out = '';
 
@@ -51,7 +65,7 @@ class CSST_WAD_Shortcode {
 			$v  = json_decode( $json, TRUE );
 		}
 
-		if( $this -> isJson( $v ) ) {
+		if( $this -> is_json( $v ) ) {
 
 			$v = json_decode( $v, TRUE );
 
@@ -87,9 +101,7 @@ class CSST_WAD_Shortcode {
 
 	}
 
-
-
-	function isJson($string) {
+	function is_json($string) {
 
 		if( ! is_string( $string ) ) { return FALSE; }
 
@@ -105,98 +117,100 @@ class CSST_WAD_Shortcode {
 
 	function get_response() {
 		
-		// The keys need to be alphabetical.
-		$params = array(
-			'oauth_consumer_key'     => $this -> consumer_key,
-			'oauth_nonce'            => wp_create_nonce( time() . rand() . $this -> url . $this -> url ),
-			'oauth_signature_method' => "HMAC-SHA1",
-			'oauth_timestamp'        => time(),
-			'oauth_token'            => $this -> access_token,
-			'oauth_version'          => "1.0",
-		);
+		$url = $this -> url;
+		if( ! empty( $this -> meta_key ) ) {
+			$url = add_query_arg( array( 'meta_key' => $this -> meta_key ), $url );
+		}
 
-		// Make signature and append to params
-		$params['oauth_signature'] = $this -> get_signature( $params );        
-		
 		// Build OAuth Authorization header from oauth_* parameters only.
-		$headers = $this->get_headers( $params );
-		
 		$args = array(
-			'method' => $this -> method,
-			'headers' => $headers,
+			'method'  => $this -> method,
+			'headers' => array(
+				'Authorization' => 'OAuth ' . $this -> header_string,
+				'timeout' => 45,
+				'sslverify' => FALSE,
+			),
 		);
-		$json_response = wp_remote_request( $this -> url, $args );
+		$json_response = wp_remote_request( $url, $args );
 
 		// Result JSON
 		return $json_response;
 
 	}
   
-	function get_signature_key() {
+	function set_signature_key() {
 		
-		$out = urlencode( $this -> consumer_secret ) . "&" . $this -> access_token_secret;
-
-		return $out;
+		// urlencode() may not be necessary depending on your values, but is recommended.
+		$this -> signature_key = urlencode( $this -> consumer_secret ) . '&' . urlencode( $this -> access_token_secret );
 
 	}
 
-	function get_base_string( $params ) {
+	function set_nonce(){
+
+		$this -> nonce = wp_create_nonce( time() . rand() . $this -> url . $this -> method );
+	
+	}
+
+	function set_headers() {
+
+		if( ! isset( $this -> headers ) ) {
+			
+			$this -> headers = array(
+				'oauth_consumer_key'     => $this -> consumer_key,
+				'oauth_nonce'            => $this -> nonce,
+				'oauth_signature_method' => 'HMAC-SHA1',
+				'oauth_timestamp'        => time(),
+				'oauth_token'            => $this -> access_token,
+				'oauth_version'          => '1.0',
+			);
+
+		} elseif( isset( $this -> signature ) ) {
+		
+			// Make signature and append to params
+			$this -> headers['oauth_signature'] = $this -> signature;   
+		
+		}
+
+	}
+
+	function set_base_string() {
 
 		$params_str = '';
 
 		// Convert params to string 
-		foreach ( $params as $k => $v ) {    
-			$params_str .= $this -> _urlencode_rfc3986( $k ) . '%3D' . $this -> _urlencode_rfc3986( $v ) . '%26';
+		foreach ( $this -> headers as $k => $v ) {    
+			$params_str .= $k . '=' . $v . '&';
 		}
-		$params_str = rtrim( $params_str, '%26' );
+		$params_str = rtrim( $params_str, '&' );
 
-		$out = $this -> method . '&' . urlencode( $this -> url ) . '&' . $params_str;
+		$out = $this -> method . '&' . urlencode( $this -> url ) . '&' . urlencode( $params_str );
 
-		return $out;
+		$this -> base_string = $out;
 
 	}
   
-	function get_signature( $params ) {
+	function set_signature() {
 
-		$base_string = $this -> get_base_string( $params );
-
-		// Form secret (second key)
-		$signature_key = $this -> get_signature_key();
-
-		$out = hash_hmac( 'sha1', $base_string, $signature_key, TRUE );
+		$out = hash_hmac( 'sha1', $this -> base_string, $this -> signature_key, TRUE );
 
 		$out = base64_encode( $out );
 
-		$out = rawurlencode( $out );
-
-		return $out;
+		$this -> signature = $out;
 
 	}
 
-	function _urlencode_rfc3986( $input ) {
+	function set_header_string() {
+
+		$out = '';     
 		
-		$out = rawurlencode( $input );
+		foreach( $this -> headers as $key => $value ) {
 
-		$out = str_replace( '%7E', '~', $out );
-
-		$out = str_replace( '+', ' ', $out );
-	
-		return $out;
-
-	}
-
-	private function get_headers( $oauth ) {
-
-		$r = 'Authorization: OAuth ';
-		foreach($oauth as $key => $value ) {
-
-			$value = rawurlencode( $value );
-
-			$r .= $key . '=' . '"' . $value . '"' . ', ';
+			$out .= $key . '=' . '"' . $value . '"' . ', ';
 		
 		}
-		$r = rtrim( $r, ', ' );
-		return $r;
+		$out = rtrim( $out, ', ' );
+
+		$this -> header_string = $out;
 	
 	}
 	
