@@ -10,8 +10,8 @@ class CSST_WAD_Shortcode {
 	public function __construct() {
 
 		//$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/wp/v2/posts/5';
-		$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/options/';
-		$this -> meta_key            = FALSE;
+		$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/options';
+		$this -> meta_key            = 'site_name';
 		$this -> consumer_key        = '3AcNVuX3C0cS';
 		$this -> consumer_secret     = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
 		$this -> access_token        = 'HyHoB8Ln6PVPX85CG6npIIgy';
@@ -118,10 +118,8 @@ class CSST_WAD_Shortcode {
 
 	function get_response() {
 		
-		$url = $this -> url;
-		if( ! empty( $this -> meta_key ) ) {
-			$url = add_query_arg( array( 'meta_key' => $this -> meta_key ), $url );
-		}
+		$url            = $this -> url;
+		$url_with_query = add_query_arg( array( 'meta_key' => $this -> meta_key ), $url );
 
 		// Build OAuth Authorization header from oauth_* parameters only.
 		$args = array(
@@ -132,7 +130,7 @@ class CSST_WAD_Shortcode {
 				'sslverify' => FALSE,
 			),
 		);
-		$json_response = wp_remote_request( $url, $args );
+		$json_response = wp_remote_request( $url_with_query, $args );
 
 		// Result JSON
 		return $json_response;
@@ -176,15 +174,21 @@ class CSST_WAD_Shortcode {
 
 	function set_base_string() {
 
-		$params_str = '';
+		$headers                 = $this -> headers;
+		$url_params              = array( 'meta_key' => $this -> meta_key );
+		$headers_with_url_params = array_merge( $headers, $url_params );
 
-		// Convert params to string 
-		foreach ( $this -> headers as $k => $v ) {    
-			$params_str .= $k . '=' . urlencode( $v ) . '&';
+		ksort( $headers_with_url_params );
+
+		$string_params = array();
+
+		foreach( $headers_with_url_params as $key => $value ) {
+			// convert oauth parameters to key-value pair
+			$string_params[] = "$key=$value";
 		}
-		$params_str = rtrim( $params_str, '&' );
 
-		$out = $this -> method . '&' . urlencode( $this -> url ) . '&' . urlencode( $params_str );
+
+		$out = $this -> method. '&' . rawurlencode( $this -> url ) . '&' . rawurlencode( implode( '&', $string_params ) );
 
 		$this -> base_string = $out;
 
