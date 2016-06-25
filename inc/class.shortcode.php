@@ -10,6 +10,7 @@ class CSST_WAD_Shortcode {
 	public function __construct() {
 
 		$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/wp/v2/posts/5';
+		//$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/options/';
 		$this -> meta_key            = FALSE;
 		$this -> consumer_key        = '3AcNVuX3C0cS';
 		$this -> consumer_secret     = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
@@ -147,7 +148,7 @@ class CSST_WAD_Shortcode {
 
 	function set_nonce(){
 
-		$this -> nonce = wp_create_nonce( time() . rand() . $this -> url . $this -> method );
+		$this -> nonce = wp_create_nonce( rand() . $this -> url . $this -> method );
 	
 	}
 
