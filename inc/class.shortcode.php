@@ -17,6 +17,9 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 
 	public function __construct() {
 
+		// I find it easiest to demonstrate stuff like this with shortcodes.
+		add_shortcode( CSS_TRICKS_WP_API_CLIENT, array( $this, 'shortcode' ) );
+
 		// The url for our custom endpoint, which returns network settings.
 		$this -> url = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/network_settings';
 		
@@ -31,8 +34,35 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 		$this -> access_token        = 'HyHoB8Ln6PVPX85CG6npIIgy';
 		$this -> access_token_secret = 'B83NPbuAfra9pkH8aNDmE98902CHYf7t5hAq1Fc5Npr7Admm';
 		
-		// All we really care about is GET requests.
+		// All we really care about here is GET requests.
 		$this -> method = 'GET';
+
+	}
+
+	/**
+	 * Our shortcode, invoked via [css_tricks_wp_api_client meta_key='whatever'].
+	 * 
+	 * @param  array $atts An array of shortcode attributes.
+	 * @return string      A glorified var_dump() of an oauth'd http call to the control install.
+	 */
+	public function shortcode( $atts ) {
+
+		$out = '';
+
+		$atts = shortcode_atts(
+			array(
+				'meta_key' => FALSE,
+			),
+			$atts,
+			CSS_TRICKS_WP_API_CLIENT
+		);
+
+		if( empty( $atts['meta_key'] ) ) {
+			return new WP_Error( 'missing_meta_key', esc_html__( 'Missing meta key.', 'css-tricks-wp-api-client' ) );
+		}
+
+		// Now that we've dug into the shortcode, we can set the meta key.
+		$this -> meta_key = sanitize_key( $atts['meta_key'] );
 
 		// Combine some semi-random, semi-unique stuff into a nonce for our request.
 		$this -> set_nonce();
@@ -55,54 +85,184 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 		// Now that we have the headers, we can combine them into a string for passing along in our http requests to the control install.
 		$this -> set_header_string();
 
-		// I find it easiest to demonstrate stuff like this with shortcodes.
-		add_shortcode( 'css_tricks_wp_api_client', array( $this, 'shortcode' ) );
-
-	}
-
-	/**
-	 * Our shortcode, invoked via [css_tricks_wp_api_client meta_key='whatever'].
-	 * 
-	 * @param  array $atts An array of shortcode attributes.
-	 * @return string      A glorified var_dump() of an oauth'd http call to the control install.
-	 */
-	public function shortcode( $atts ) {
-
-		$out = '';
-
+		// Make the http request.
 		$response = $this -> get_response();
 
+		// Dig into the response and present it as a list.
 		foreach( $response as $k => $v ) {
 			$out .= $this -> stringify( $k, $v );
 		}
 
-		$out = "<div class='csst_wad_shortcode'>$out</div>";
+		$class = sanitize_html_class( __CLASS__ . '-' . __FUNCTION__ );
+
+		$out = "<div class='$class'>$out</div>";
 
 		return $out;
 
 	}
+
+	/**
+	 * Combine the consumer_secret and the access_token_secret into a signature key.
+	 * 
+	 * @see http://oauth1.wp-api.org/docs/basics/Signing.html#signature-key
+	 */
+	function set_signature_key() {
+		
+		$this -> signature_key = urlencode( $this -> consumer_secret ) . '&' . urlencode( $this -> access_token_secret );
+
+	}
+
+	/**
+	 * Combine some semi-random, semi-unique stuff into a nonce.
+	 */
+	function set_nonce(){
+
+		$this -> nonce = wp_create_nonce( rand() . $this -> url . $this -> method );
 	
+	}
+
+	/**
+	 * Combine the values from postman, the oauth1 plugin, and this class iteslf, into the headers array.
+	 * 
+	 * This function gets run twice.  First, it sets most of the headers.  Later, it sets the final header, the oauth_signature.
+	 * You can't do them all at once because you need the base string in order to set the signature, and the base string needs the first few headers!
+	 */
+	function set_headers() {
+
+		// If we've not yet the headers, set the first few ones, which are easy.
+		if( ! isset( $this -> headers ) ) {
+			
+			// These need to be in alphabetical order, although we will sort them later, automatically.
+			$this -> headers = array(
+				'oauth_consumer_key'     => $this -> consumer_key,
+				'oauth_nonce'            => $this -> nonce,
+				'oauth_signature_method' => 'HMAC-SHA1',
+				'oauth_timestamp'        => time(),
+				'oauth_token'            => $this -> access_token,
+				'oauth_version'          => '1.0',
+			);
+
+		// If we've already set some of the headers and we have the signaute now, add the signature to the headers.
+		} elseif( isset( $this -> signature ) ) {
+	
+			$this -> headers['oauth_signature'] = $this -> signature;   
+		
+		}
+
+	}
+
+	/**
+	 * Combine the first few headers and any url vars into the base string.
+	 * 
+	 * @see http://oauth1.wp-api.org/docs/basics/Signing.html#base-string
+	 */
+	function set_base_string() {
+
+		// Start by grabbing the oauth headers.
+		$headers = $this -> headers;
+
+		// Grab the url parameters.
+		$url_params = array(
+			'meta_key' => $this -> meta_key,
+		);
+
+		// Combine the two arrays.
+		$headers_and_params = array_merge( $headers, $url_params );
+	
+		// They need to be alphabetical.
+		ksort( $headers_and_params );
+
+		// This will hold each key/value pair of the array, as a string.
+		$headers_and_params_string = '';
+
+		// For each header and url param...
+		foreach( $headers_and_params as $key => $value ) {
+
+			// Combine them into a string.
+			$headers_and_params_string .= "$key=$value&";
+
+		}
+
+		// Remove the trailing ampersand.
+		$headers_and_params_string = rtrim( $headers_and_params_string, '&' );
+
+		$out = $this -> method . '&' . rawurlencode( $this -> url ) . '&' . rawurlencode( $headers_and_params_string );
+
+		$this -> base_string = $out;
+
+	}
+  
+	/**
+	 * Combine the base_string and the signature_key into the signature.
+	 * 
+	 * @see http://oauth1.wp-api.org/docs/basics/Signing.html#signature
+	 */
+	function set_signature() {
+
+		$out = hash_hmac( 'sha1', $this -> base_string, $this -> signature_key, TRUE );
+
+		$out = base64_encode( $out );
+
+		$this -> signature = $out;
+
+	}
+
+	/**
+	 * Combine the header array into a string.
+	 */
+	function set_header_string() {
+
+		$out = '';     
+		
+		// For each of the headers, which at this point does now include the signature...
+		foreach( $this -> headers as $key => $value ) {
+
+			$value = rawurlencode( $value );
+
+			// Yes, it's mandatory to do double quotes aroung each value.
+			$out .= $key . '=' . '"' . $value . '"' . ', ';
+		
+		}
+
+		// Trim off the trailing comma/space.
+		$out = rtrim( $out, ', ' );
+
+		// Kind of similar to basic auth, you have to prepend this little string to declare what sort of auth you're sending.
+		$out = 'OAuth ' . $out;
+
+		$this -> header_string = $out;
+	
+	}	
+	
+	/**
+	 * Just a cool function I wrote for outputting the result of an API call.
+	 * 
+	 * @param  string $k A key.
+	 * @param  mixed  $v The value for $k.
+	 * @return string A nested list, depicting the value of $v.
+	 */
 	public function stringify( $k, $v ) {
 
+		// Open a list, starting with $k.
 		$out = "<ul><li><strong>$k:&nbsp;</strong>";
 
 		// If it's an object, make it into an array.
 		if( is_object( $v ) ) {
 			$json = json_encode( $v );
-			$v  = json_decode( $json, TRUE );
+			$v    = json_decode( $json, TRUE );
 		}
 
+		// If it's json, turn it into an array.
 		if( $this -> is_json( $v ) ) {
-
 			$v = json_decode( $v, TRUE );
-
 		}
 
-		// If it's scalar, great, time to just log it.
+		// If it's scalar, great, time to just add it.
 		if( is_scalar( $v ) ) {
 
 			$out .= esc_html( $v ) . '</li>' . PHP_EOL;
 
+		// If it's null, say so.
 		} elseif( is_null( $v ) ) {
 
 			$out .= '(null)' . '</li>' . PHP_EOL;
@@ -128,169 +288,58 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 
 	}
 
-	function is_json($string) {
+	/**
+	 * Determine if a string is JSON.
+	 * 
+	 * @param  string  $string Any string.
+	 * @return boolean Return TRUE if $string is json, else FALSE.
+	 */
+	function is_json( $string ) {
 
+		// If it's not even a string, bail.
 		if( ! is_string( $string ) ) { return FALSE; }
 
+		// Attempt to decode it.
 		json_decode( $string );
 		
+		// Was there an error in decoding it?
 		$json_last_error = json_last_error();
 		
+		// If not, great, it's json.
 		if( $json_last_error == JSON_ERROR_NONE ) { return TRUE; }
 
+		// If so, then it's not json.
 		return FALSE;
 	
 	}
 
+	/**
+	 * Make an oauth'd http request.
+	 * 
+	 * @return object The result of an oauth'd http request.
+	 */
 	function get_response() {
 		
-		$url            = $this -> url;
+		// Grab the url to which we'll be making the request.
+		$url = $this -> url;
+
+		// If there is a meta_key, add that as a url var.
 		if( ! empty( $this -> meta_key ) ) {
 			$url = add_query_arg( array( 'meta_key' => $this -> meta_key ), $url );
 		}
 
-		// Build OAuth Authorization header from oauth_* parameters only.
+		// Args for wp_remote_*().
 		$args = array(
 			'method'  => $this -> method,
 			'headers' => array(
-				'Authorization' => 'OAuth ' . $this -> header_string,
+				'Authorization' => $this -> header_string,
 			),
 		);
-		$json_response = wp_remote_request( $url, $args );
 
-		// Result JSON
-		return $json_response;
+		$out = wp_remote_request( $url, $args );
 
-	}
-  
-	function set_signature_key() {
-		
-		// urlencode() may not be necessary depending on your values, but is recommended.
-		$this -> signature_key = urlencode( $this -> consumer_secret ) . '&' . urlencode( $this -> access_token_secret );
+		return $out;
 
 	}
 
-	function set_nonce(){
-
-		$this -> nonce = wp_create_nonce( rand() . $this -> url . $this -> method );
-	
-	}
-
-	function set_headers() {
-
-		if( ! isset( $this -> headers ) ) {
-			
-			$this -> headers = array(
-				'oauth_consumer_key'     => $this -> consumer_key,
-				'oauth_nonce'            => $this -> nonce,
-				'oauth_signature_method' => 'HMAC-SHA1',
-				'oauth_timestamp'        => time(),
-				'oauth_token'            => $this -> access_token,
-				'oauth_version'          => '1.0',
-			);
-
-		} elseif( isset( $this -> signature ) ) {
-		
-			// Make signature and append to params
-			$this -> headers['oauth_signature'] = $this -> signature;   
-		
-		}
-
-	}
-
-	// GET&http%3A%2F%2Fscottfennell.com%2Fcss-tricks-wp-api-control%2Fwp-json%2Fcss_tricks_wp_api_control%2Fv1%2Fnetwork_settings&meta_key%3Dsite_name%26oauth_consumer_key%3D3AcNVuX3C0cS%26oauth_nonce%3Ddaeb926d24%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1466890729%26oauth_token%3DHyHoB8Ln6PVPX85CG6npIIgy%26oauth_version%3D1.0
-	/*function set_base_string() {
-
-		$headers                 = $this -> headers;
-		if( ! empty( $this -> meta_key ) ) {
-			$url_params              = array( 'meta_key' => $this -> meta_key );
-			$headers = array_merge( $headers, $url_params );
-		}
-
-		ksort( $headers );
-
-		$string_params = array();
-
-		foreach( $headers as $key => $value ) {
-			$string_params[] = "$key=$value";
-		}
-
-
-		$out = $this -> method. '&' . rawurlencode( $this -> url ) . '&' . rawurlencode( implode( '&', $string_params ) );
-
-		wp_die( var_dump( $out ) );
-
-		$this -> base_string = $out;
-
-	}*/
-
-	/**
-	 * Combine the headers and the url var for 'meta_key' into the base_string.
-	 */
-	// GET&http%3A%2F%2Fscottfennell.com%2Fcss-tricks-wp-api-control%2Fwp-json%2Fcss_tricks_wp_api_control%2Fv1%2Fnetwork_settings&meta_key%3Dsite_name%26oauth_consumer_key%3D3AcNVuX3C0cS%26oauth_nonce%3D4f03989add%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1466890667%26oauth_token%3DHyHoB8Ln6PVPX85CG6npIIgy%26oauth_version%3D1.0%26
-	function set_base_string() {
-
-		// Start by grabbing the oauth headers.
-		$headers = $this -> headers;
-
-		// Grab the url parameters.
-		$url_params = array(
-			'meta_key' => $this -> meta_key
-		);
-
-		// Combine the two arrays.
-		$headers_and_params = array_merge( $headers, $url_params );
-	
-		// They need to be alphabetical.
-		ksort( $headers_and_params );
-
-		// This will hold each key/value pair of the array, as a string.
-		$headers_and_params_string = '';
-
-		// For each header and url param...
-		foreach( $headers_and_params as $key => $value ) {
-
-			// Combine them into a string.
-			$headers_and_params_string .= "$key=$value&";
-
-		}
-
-		// Remove the trailing ampersan.
-		$headers_and_params_string = rtrim( $headers_and_params_string, '&' );
-
-		$out = $this -> method. '&' . rawurlencode( $this -> url ) . '&' . rawurlencode( $headers_and_params_string );
-
-		$this -> base_string = $out;
-
-	}
-  
-
-	function set_signature() {
-
-		$out = hash_hmac( 'sha1', $this -> base_string, $this -> signature_key, TRUE );
-
-		$out = base64_encode( $out );
-
-		$this -> signature = $out;
-
-	}
-
-	function set_header_string() {
-
-		$out = '';     
-		
-		foreach( $this -> headers as $key => $value ) {
-
-			// You might think these headers are just letters and numbers, but that's not always the case due to base64_encode().
-			$value = rawurlencode( $value );
-
-			$out .= $key . '=' . '"' . $value . '"' . ', ';
-		
-		}
-		$out = rtrim( $out, ', ' );
-
-		$this -> header_string = $out;
-	
-	}
-	
 }
