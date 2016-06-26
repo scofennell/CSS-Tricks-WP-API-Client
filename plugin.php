@@ -1,19 +1,19 @@
 <?php
 
 /**
- * @package CSS_Tricks_WAD_Client
+ * @package CSS_Tricks_WP_API_Client
  */
 
-/*
-Plugin Name: CSST WAD Client
-Plugin URI: https://css-tricks.com
-Description: CSST WAD Client.
-Version: 1.0
-Author: Scott Fennell
-Author URI: http://scottfennell.org
-License: GPLv2 or later
-Text Domain: csst-nav
-*/
+/**
+ * Plugin Name: CSS-Tricks WP API Client
+ * Plugin URI: https://css-tricks.com
+ * Description: A sample plugin for making oauth requests to the WP API.
+ * Version: 1.0
+ * Author: Scott Fennell
+ * Author URI: http://scottfennell.org
+ * License: GPLv2 or later
+ * Text Domain: csst-nav
+ */
 
 /*
 This program is free software; you can redistribute it and/or
@@ -38,19 +38,21 @@ if ( ! function_exists( 'add_action' ) ) {
 }
 
 // Define a slug for our plugin to use in CSS classes and such.
-define( 'CSST_WAD', 'csst_wad' );
+define( 'CSS_TRICKS_WP_API_CLIENT', 'css_tricks_wp_api_client' );
 
 /**
  * Define a version that's more easily accessible than the docblock one,
  * for cache-busting.
  */
-define( 'CSST_WAD_VERSION', '1.0' );
+define( 'CSS_TRICKS_WP_API_CLIENT', '1.0' );
 
 // Define paths and urls for easy loading of files.
-define( 'CSST_WAD_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'CSST_WAD_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'CSS_TRICKS_WP_API_CLIENT_URL', plugin_dir_url( __FILE__ ) );
+define( 'CSS_TRICKS_WP_API_CLIENT_DIR', plugin_dir_path( __FILE__ ) );
 
 // For each php file in the inc/ folder, require it.
-foreach( glob( CSST_WAD_PLUGIN_DIR . 'inc/*.php' ) as $filename ) {
+foreach( glob( CSS_TRICKS_WP_API_CLIENT_DIR . 'inc/*.php' ) as $filename ) {
+
     require_once( $filename );
+
 }

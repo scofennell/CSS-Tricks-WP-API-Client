@@ -1,7 +1,15 @@
 <?php
 
-function CSST_WAD_Shortcode_init() {
-	new CSST_WAD_Shortcode;
+/**
+ * A class for demonstrating how to make oauth requests to the WP API.
+ *
+ * @package WordPress
+ * @subpackage CSS_Tricks_WP_API_Client
+ * @since CSS_Tricks_WP_API_Client 1.0
+ */
+
+function CSS_Tricks_WP_API_Client_Shortcode_init() {
+	new CSS_Tricks_WP_API_Client_Shortcode;
 }
 add_action( 'plugins_loaded', 'CSST_WAD_Shortcode_init' );
 
@@ -9,36 +17,50 @@ class CSST_WAD_Shortcode {
 
 	public function __construct() {
 
-		//$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/wp/v2/posts/5';
-		$this -> url                 = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/options';
-		$this -> meta_key            = 'site_name';
-		$this -> consumer_key        = '3AcNVuX3C0cS';
-		$this -> consumer_secret     = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
+		// The url for our custom endpoint, which returns network settings.
+		$this -> url = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/network_settings';
+		
+		// Later on, we'll provide a value for the meta_key for the network setting we want to grab.
+		$this -> meta_key = FALSE;
+
+		// You'd get these from /wp-admin/users.php?page=rest-oauth1-apps on the control install.
+		$this -> consumer_key    = '3AcNVuX3C0cS';
+		$this -> consumer_secret = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
+		
+		// You'd get these from postman.
 		$this -> access_token        = 'HyHoB8Ln6PVPX85CG6npIIgy';
 		$this -> access_token_secret = 'B83NPbuAfra9pkH8aNDmE98902CHYf7t5hAq1Fc5Npr7Admm';
-		$this -> method              = 'GET';
+		
+		// All we really care about is GET requests.
+		$this -> method = 'GET';
 
-		$this -> set_signature_key();
+		// Combine some semi-random, semi-unique stuff into a nonce for our request.
 		$this -> set_nonce();
+		
+		// Since we already have the consumer_secret and the access_token_secret, we can set the signature_key.
+		$this -> set_signature_key();
+
+		// We can set some of the headers now, but we'll have to revisit them later to set one of them in particular.
 		$this -> set_headers();
+
+		// Now that we have the url, method, and some of the headers, we can set the base string.
 		$this -> set_base_string();
+
+		// Now that we have the base string and the signature key, we can set the signature.
 		$this -> set_signature();
+
+		// Now that we have the signature, we can revisit the headers and set the final one.
 		$this -> set_headers();
+
+		// Now that we have the headers, we can combine them into a string for passing along in our http requests to the control install.
 		$this -> set_header_string();
 
-		add_shortcode( 'csst_wad', array( $this, 'shortcode' ) );
+		// I find it easiest to demonstrate stuff like this with shortcodes.
+		add_shortcode( 'csst_wp_api_client', array( $this, 'shortcode' ) );
 
 	}
 
 	public function shortcode( $atts ) {
-
-		$a = shortcode_atts( array(
-			'meta_key'   => FALSE,
-		), $atts );
-
-		if( ! empty( $a['meta_key'] ) ) {
-			$this -> meta_key = $a['meta_key'];
-		}
 
 		$out = '';
 
@@ -119,18 +141,18 @@ class CSST_WAD_Shortcode {
 	function get_response() {
 		
 		$url            = $this -> url;
-		$url_with_query = add_query_arg( array( 'meta_key' => $this -> meta_key ), $url );
+		if( ! empty( $this -> meta_key ) ) {
+			$url = add_query_arg( array( 'meta_key' => $this -> meta_key ), $url );
+		}
 
 		// Build OAuth Authorization header from oauth_* parameters only.
 		$args = array(
 			'method'  => $this -> method,
 			'headers' => array(
 				'Authorization' => 'OAuth ' . $this -> header_string,
-				'timeout' => 45,
-				'sslverify' => FALSE,
 			),
 		);
-		$json_response = wp_remote_request( $url_with_query, $args );
+		$json_response = wp_remote_request( $url, $args );
 
 		// Result JSON
 		return $json_response;
@@ -172,28 +194,73 @@ class CSST_WAD_Shortcode {
 
 	}
 
-	function set_base_string() {
+	// GET&http%3A%2F%2Fscottfennell.com%2Fcss-tricks-wp-api-control%2Fwp-json%2Fcss_tricks_wp_api_control%2Fv1%2Fnetwork_settings&meta_key%3Dsite_name%26oauth_consumer_key%3D3AcNVuX3C0cS%26oauth_nonce%3Ddaeb926d24%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1466890729%26oauth_token%3DHyHoB8Ln6PVPX85CG6npIIgy%26oauth_version%3D1.0
+	/*function set_base_string() {
 
 		$headers                 = $this -> headers;
-		$url_params              = array( 'meta_key' => $this -> meta_key );
-		$headers_with_url_params = array_merge( $headers, $url_params );
+		if( ! empty( $this -> meta_key ) ) {
+			$url_params              = array( 'meta_key' => $this -> meta_key );
+			$headers = array_merge( $headers, $url_params );
+		}
 
-		ksort( $headers_with_url_params );
+		ksort( $headers );
 
 		$string_params = array();
 
-		foreach( $headers_with_url_params as $key => $value ) {
-			// convert oauth parameters to key-value pair
+		foreach( $headers as $key => $value ) {
 			$string_params[] = "$key=$value";
 		}
 
 
 		$out = $this -> method. '&' . rawurlencode( $this -> url ) . '&' . rawurlencode( implode( '&', $string_params ) );
 
+		wp_die( var_dump( $out ) );
+
+		$this -> base_string = $out;
+
+	}*/
+
+	/**
+	 * Combine the headers and the url var for 'meta_key' into the base_string.
+	 */
+	// GET&http%3A%2F%2Fscottfennell.com%2Fcss-tricks-wp-api-control%2Fwp-json%2Fcss_tricks_wp_api_control%2Fv1%2Fnetwork_settings&meta_key%3Dsite_name%26oauth_consumer_key%3D3AcNVuX3C0cS%26oauth_nonce%3D4f03989add%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1466890667%26oauth_token%3DHyHoB8Ln6PVPX85CG6npIIgy%26oauth_version%3D1.0%26
+	function set_base_string() {
+
+		// Start by grabbing the oauth headers.
+		$headers = $this -> headers;
+
+		// Grab the url parameters.
+		$url_params = array(
+			'meta_key' => $this -> meta_key
+		);
+
+		// Combine the two arrays.
+		$headers_and_params = array_merge( $headers, $url_params );
+	
+		// They need to be alphabetical.
+		ksort( $headers_and_params );
+
+		// This will hold each key/value pair of the array, as a string.
+		$headers_and_params_string = '';
+
+		// For each header and url param...
+		foreach( $headers_and_params as $key => $value ) {
+
+			// Combine them into a string.
+			$headers_and_params_string .= "$key=$value&";
+
+		}
+
+		// Remove the trailing ampersan.
+		$headers_and_params_string = rtrim( $headers_and_params_string, '&' );
+
+		$out = $this -> method. '&' . rawurlencode( $this -> url ) . '&' . rawurlencode( $headers_and_params_string );
+
 		$this -> base_string = $out;
 
 	}
   
+
 	function set_signature() {
 
 		$out = hash_hmac( 'sha1', $this -> base_string, $this -> signature_key, TRUE );
