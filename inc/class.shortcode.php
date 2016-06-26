@@ -11,9 +11,9 @@
 function CSS_Tricks_WP_API_Client_Shortcode_init() {
 	new CSS_Tricks_WP_API_Client_Shortcode;
 }
-add_action( 'plugins_loaded', 'CSST_WAD_Shortcode_init' );
+add_action( 'plugins_loaded', 'CSS_Tricks_WP_API_Client_Shortcode_init' );
 
-class CSST_WAD_Shortcode {
+class CSS_Tricks_WP_API_Client_Shortcode {
 
 	public function __construct() {
 
