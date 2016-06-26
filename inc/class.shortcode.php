@@ -56,17 +56,21 @@ class CSST_WAD_Shortcode {
 		$this -> set_header_string();
 
 		// I find it easiest to demonstrate stuff like this with shortcodes.
-		add_shortcode( 'csst_wp_api_client', array( $this, 'shortcode' ) );
+		add_shortcode( 'css_tricks_wp_api_client', array( $this, 'shortcode' ) );
 
 	}
 
+	/**
+	 * Our shortcode, invoked via [css_tricks_wp_api_client meta_key='whatever'].
+	 * 
+	 * @param  array $atts An array of shortcode attributes.
+	 * @return string      A glorified var_dump() of an oauth'd http call to the control install.
+	 */
 	public function shortcode( $atts ) {
 
 		$out = '';
 
 		$response = $this -> get_response();
-
-		wp_die( var_dump( $response ) );
 
 		foreach( $response as $k => $v ) {
 			$out .= $this -> stringify( $k, $v );

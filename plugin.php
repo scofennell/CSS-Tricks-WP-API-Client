@@ -12,7 +12,7 @@
  * Author: Scott Fennell
  * Author URI: http://scottfennell.org
  * License: GPLv2 or later
- * Text Domain: csst-nav
+ * Text Domain: css-tricks-wp-api-client
  */
 
 /*
@@ -44,7 +44,7 @@ define( 'CSS_TRICKS_WP_API_CLIENT', 'css_tricks_wp_api_client' );
  * Define a version that's more easily accessible than the docblock one,
  * for cache-busting.
  */
-define( 'CSS_TRICKS_WP_API_CLIENT', '1.0' );
+define( 'CSS_TRICKS_WP_API_CLIENT_VERSION', '1.0' );
 
 // Define paths and urls for easy loading of files.
 define( 'CSS_TRICKS_WP_API_CLIENT_URL', plugin_dir_url( __FILE__ ) );
