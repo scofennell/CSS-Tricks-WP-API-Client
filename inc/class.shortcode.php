@@ -28,11 +28,11 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 
 		// You'd get these from /wp-admin/users.php?page=rest-oauth1-apps on the control install.
 		$this -> consumer_key    = '3AcNVuX3C0cS';
-		$this -> consumer_secret = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';	
+		$this -> consumer_secret = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';
 		
 		// You'd get these from postman.
-		$this -> access_token        = 'HyHoB8Ln6PVPX85CG6npIIgy';
-		$this -> access_token_secret = 'B83NPbuAfra9pkH8aNDmE98902CHYf7t5hAq1Fc5Npr7Admm';
+		$this -> access_token        = '0u3umhf9DFtn8PGXFwxgw5GN';
+		$this -> access_token_secret = 'w4XtFmQrgtEajv5mNHu9jtfBBSsrSexcTHuDj3OAjccBArE4';
 		
 		// All we really care about here is GET requests.
 		$this -> method = 'GET';
