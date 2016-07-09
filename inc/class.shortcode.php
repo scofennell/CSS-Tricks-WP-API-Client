@@ -20,23 +20,6 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 		// I find it easiest to demonstrate stuff like this with shortcodes.
 		add_shortcode( CSS_TRICKS_WP_API_CLIENT, array( $this, 'shortcode' ) );
 
-		// The url for our custom endpoint, which returns network settings.
-		$this -> url = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/network_settings';
-		
-		// Later on, we'll provide a value for the meta_key for the network setting we want to grab.
-		$this -> meta_key = FALSE;
-
-		// You'd get these from /wp-admin/users.php?page=rest-oauth1-apps on the control install.
-		$this -> consumer_key    = '3AcNVuX3C0cS';
-		$this -> consumer_secret = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';
-		
-		// You'd get these from postman.
-		$this -> access_token        = '0u3umhf9DFtn8PGXFwxgw5GN';
-		$this -> access_token_secret = 'w4XtFmQrgtEajv5mNHu9jtfBBSsrSexcTHuDj3OAjccBArE4';
-		
-		// All we really care about here is GET requests.
-		$this -> method = 'GET';
-
 	}
 
 	/**
@@ -49,7 +32,10 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 
 		$out = '';
 
-		$atts = shortcode_atts(
+		// Grab the values that the user supplied to the shortcode.
+		$a = shortcode_atts(
+			
+			// There's really only one, meta_key, which is the name of the value we want to grab from the control blog.
 			array(
 				'meta_key' => FALSE,
 			),
@@ -57,14 +43,21 @@ class CSS_Tricks_WP_API_Client_Shortcode {
 			CSS_TRICKS_WP_API_CLIENT
 		);
 
+		// Sanitize the meta_key.
+		$meta_key = sanitize_key( $a['meta_key'] );
+
+		// Instantiate our Oauth class, which takes one arg, the meta_key.
+		$oauth = new CSS_Tricks_WP_API_Client_OAuth( $meta_key );
+
 		// Make the http request.
-		$response = $this -> oauth -> get_response();
+		$response = $oauth -> get_response();
 
 		// Dig into the response and present it as a list.
 		foreach( $response as $k => $v ) {
 			$out .= $this -> stringify( $k, $v );
 		}
 
+		// I like to make CSS classes in this manner.
 		$class = sanitize_html_class( __CLASS__ . '-' . __FUNCTION__ );
 
 		$out = "<div class='$class'>$out</div>";

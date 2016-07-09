@@ -42,15 +42,15 @@ if ( ! function_exists( 'add_action' ) ) {
  */
 
 // The url where your custom endpoint is, on the control blog. Similar to, http://example.com/wp-json/css_tricks_wp_api_control/v1/network_settings
-define( CSS_TRICKS_WP_API_CLIENT_CONTROL_URL, '' );
+define( 'CSS_TRICKS_WP_API_CLIENT_CONTROL_URL', 'YOUR VALUE HERE' );
 
 // You'd get these from /wp-admin/users.php?page=rest-oauth1-apps on the control install.
-CSS_TRICKS_WP_API_CLIENT_CONSUMER_KEY        = '';
-CSS_TRICKS_WP_API_CLIENT_CONSUMER_SECRET     = '';
+define( 'CSS_TRICKS_WP_API_CLIENT_CONSUMER_KEY', 'YOUR VALUE HERE' );
+define( 'CSS_TRICKS_WP_API_CLIENT_CONSUMER_SECRET', 'YOUR VALUE HERE' );
 
 // You'd get these from postman.
-CSS_TRICKS_WP_API_CLIENT_ACCESS_TOKEN        = '';
-CSS_TRICKS_WP_API_CLIENT_ACCESS_TOKEN_SECRET = '';
+define( 'CSS_TRICKS_WP_API_CLIENT_ACCESS_TOKEN', 'YOUR VALUE HERE' );
+define( 'CSS_TRICKS_WP_API_CLIENT_ACCESS_TOKEN_SECRET', 'YOUR VALUE HERE' );
 
 /**
  * Stop editing here!

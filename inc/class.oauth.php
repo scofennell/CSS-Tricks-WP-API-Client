@@ -8,34 +8,26 @@
  * @since CSS_Tricks_WP_API_Client 1.0
  */
 
-function CSS_Tricks_WP_API_Client_OAuth() {
-	new CSS_Tricks_WP_API_Client_Shortcode;
-}
-add_action( 'plugins_loaded', 'CSS_Tricks_WP_API_Client_OAuth_init' );
-
 class CSS_Tricks_WP_API_Client_OAuth {
 
-	public function __construct() {
+	public function __construct( $meta_key = FALSE ) {
+
+		// The network setting we want to grab.
+		$this -> meta_key = sanitize_key( $meta_key );
 
 		// The url for our custom endpoint, which returns network settings.
-		$this -> url = 'http://scottfennell.com/css-tricks-wp-api-control/wp-json/css_tricks_wp_api_control/v1/network_settings';
-		
-		// Later on, we'll provide a value for the meta_key for the network setting we want to grab.
-		$this -> meta_key = FALSE;
+		$this -> url = esc_url( CSS_TRICKS_WP_API_CLIENT_CONTROL_URL );
 
 		// You'd get these from /wp-admin/users.php?page=rest-oauth1-apps on the control install.
-		$this -> consumer_key    = '3AcNVuX3C0cS';
-		$this -> consumer_secret = 'QlKmoHKR0gzRUXkCw1LlpmRRz0zaSAreCz626Ztp6ifQdcvR';
+		$this -> consumer_key    = CSS_TRICKS_WP_API_CLIENT_CONSUMER_KEY;
+		$this -> consumer_secret = CSS_TRICKS_WP_API_CLIENT_CONSUMER_SECRET;
 		
 		// You'd get these from postman.
-		$this -> access_token        = '0u3umhf9DFtn8PGXFwxgw5GN';
-		$this -> access_token_secret = 'w4XtFmQrgtEajv5mNHu9jtfBBSsrSexcTHuDj3OAjccBArE4';
+		$this -> access_token        = CSS_TRICKS_WP_API_CLIENT_ACCESS_TOKEN;
+		$this -> access_token_secret = CSS_TRICKS_WP_API_CLIENT_ACCESS_TOKEN_SECRET;
 		
 		// All we really care about here is GET requests.
 		$this -> method = 'GET';
-
-		// Now that we've dug into the shortcode, we can set the meta key.
-		$this -> meta_key = sanitize_key( $atts['meta_key'] );
 
 		// Combine some semi-random, semi-unique stuff into a nonce for our request.
 		$this -> set_nonce();
@@ -74,7 +66,7 @@ class CSS_Tricks_WP_API_Client_OAuth {
 	/**
 	 * Combine some semi-random, semi-unique stuff into a nonce.
 	 */
-	function set_nonce(){
+	function set_nonce() {
 
 		$this -> nonce = wp_create_nonce( rand() . $this -> url . $this -> method );
 	
