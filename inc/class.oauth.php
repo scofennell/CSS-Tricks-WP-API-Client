@@ -53,23 +53,23 @@ class CSS_Tricks_WP_API_Client_OAuth {
 	}
 
 	/**
+	 * Combine some semi-random, semi-unique stuff into a nonce.
+	 */
+	private function set_nonce() {
+
+		$this -> nonce = wp_create_nonce( rand() . $this -> url . $this -> method );
+	
+	}
+
+	/**
 	 * Combine the consumer_secret and the access_token_secret into a signature key.
 	 * 
 	 * @see http://oauth1.wp-api.org/docs/basics/Signing.html#signature-key
 	 */
-	function set_signature_key() {
+	private function set_signature_key() {
 		
 		$this -> signature_key = urlencode( $this -> consumer_secret ) . '&' . urlencode( $this -> access_token_secret );
 
-	}
-
-	/**
-	 * Combine some semi-random, semi-unique stuff into a nonce.
-	 */
-	function set_nonce() {
-
-		$this -> nonce = wp_create_nonce( rand() . $this -> url . $this -> method );
-	
 	}
 
 	/**
@@ -78,7 +78,7 @@ class CSS_Tricks_WP_API_Client_OAuth {
 	 * This function gets run twice.  First, it sets most of the headers.  Later, it sets the final header, the oauth_signature.
 	 * You can't do them all at once because you need the base string in order to set the signature, and the base string needs the first few headers!
 	 */
-	function set_headers() {
+	private function set_headers() {
 
 		// If we've not yet the headers, set the first few ones, which are easy.
 		if( ! isset( $this -> headers ) ) {
@@ -107,7 +107,7 @@ class CSS_Tricks_WP_API_Client_OAuth {
 	 * 
 	 * @see http://oauth1.wp-api.org/docs/basics/Signing.html#base-string
 	 */
-	function set_base_string() {
+	private function set_base_string() {
 
 		// Start by grabbing the oauth headers.
 		$headers = $this -> headers;
@@ -148,7 +148,7 @@ class CSS_Tricks_WP_API_Client_OAuth {
 	 * 
 	 * @see http://oauth1.wp-api.org/docs/basics/Signing.html#signature
 	 */
-	function set_signature() {
+	private function set_signature() {
 
 		$out = hash_hmac( 'sha1', $this -> base_string, $this -> signature_key, TRUE );
 
@@ -161,7 +161,7 @@ class CSS_Tricks_WP_API_Client_OAuth {
 	/**
 	 * Combine the header array into a string.
 	 */
-	function set_header_string() {
+	private function set_header_string() {
 
 		$out = '';     
 		
@@ -190,7 +190,7 @@ class CSS_Tricks_WP_API_Client_OAuth {
 	 * 
 	 * @return object The result of an oauth'd http request.
 	 */
-	function get_response() {
+	public function get_response() {
 		
 		// Grab the url to which we'll be making the request.
 		$url = $this -> url;
