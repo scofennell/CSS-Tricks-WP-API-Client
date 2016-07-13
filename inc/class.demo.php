@@ -89,6 +89,15 @@ class CSS_Tricks_WP_API_Client_Demo {
 			$v = json_decode( $v, TRUE );
 		}
 
+		// Handle some special values that would not otherwise display well.
+		if( $v === FALSE ) {
+			$v = '(false)';
+		} elseif( $v === TRUE ) {
+			$v = '(true)';
+		} elseif ( $v === '' ) {
+			$v = '(empty string)';
+		}
+
 		// If it's scalar, great, time to just add it.
 		if( is_scalar( $v ) ) {
 
