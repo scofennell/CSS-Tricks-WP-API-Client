@@ -93,7 +93,7 @@ class CSS_Tricks_WP_API_Client_OAuth {
 				'oauth_version'          => '1.0',
 			);
 
-		// If we've already set some of the headers and we have the signaute now, add the signature to the headers.
+		// If we've already set some of the headers and we have the signature now, add the signature to the headers.
 		} elseif( isset( $this -> signature ) ) {
 	
 			$this -> headers['oauth_signature'] = $this -> signature;   
