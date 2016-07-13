@@ -8,12 +8,12 @@
  * @since CSS_Tricks_WP_API_Client 1.0
  */
 
-function CSS_Tricks_WP_API_Client_Shortcode_init() {
-	new CSS_Tricks_WP_API_Client_Shortcode;
+function CSS_Tricks_WP_API_Client_Demo_init() {
+	new CSS_Tricks_WP_API_Client_Demo;
 }
-add_action( 'plugins_loaded', 'CSS_Tricks_WP_API_Client_Shortcode_init' );
+add_action( 'plugins_loaded', 'CSS_Tricks_WP_API_Client_Demo_init' );
 
-class CSS_Tricks_WP_API_Client_Shortcode {
+class CSS_Tricks_WP_API_Client_Demo {
 
 	public function __construct() {
 
