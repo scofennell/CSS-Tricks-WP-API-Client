@@ -164,7 +164,7 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		if( isset( $setting_v['type'] ) ) {
 			$type = $setting_v['type'];
 		}
-		
+
 		// The <label> text for this input.
 		$label = '';
 		if( isset( $setting_v['label'] ) ) {
@@ -177,18 +177,28 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 			$notes = $setting_v['notes'];       
 		}
 		
-		// The html 'id' attribute for this input.
-		$html_id = '';
-		if( isset( $setting_v['html_id'] ) ) {
-			$html_id = $setting_v['html_id'];       
-		}
-		
 		// Build the name into array syntax.
 		$name = $section_k . '[' . $setting_k . ']';
 
 		// Call the DB and get the current value for this setting.
-		$value = $this -> settings -> get_value( $section_k, $setting_k );
-		$value = esc_attr( $value );
+		$current_value = $this -> settings -> get_value( $section_k, $setting_k );
+		$current_value = esc_attr( $current_value );
+
+		if( $type == 'checkbox' ) {
+
+			$value_attr = $setting_v['value'];
+
+		} else {
+		
+			$value_attr = $current_value;
+		
+		}
+
+		// Should the setting be checked?
+		$maybe_checked = '';
+		if( $type == 'checkbox' ) {
+			$maybe_checked = checked( $current_value, $value_attr, FALSE );
+		}
 
 		// Handle select inputs.
 		if ( $type == 'select' ) {
@@ -203,17 +213,17 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 
 			}
 
-			$field = "<select id='$html_id' name='$name' $maybe_disabled>$options_str</select>";
+			$field = "<select id='$name' name='$name' $maybe_disabled>$options_str</select>";
 			
 		// Handle other input types.
 		} else {
 
-			$field = "<input type='$type' name='$name' value='$value' $maybe_disabled>";
+			$field = "<input type='$type' id='$name' name='$name' value='$value_attr' $maybe_disabled $maybe_checked>";
 
 		}
 
 		$out = "
-			<label for='$html_id'>
+			<label for='$name'>
 				$field
 				<p><i>$notes</i></p>
 			</label>
