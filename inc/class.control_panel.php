@@ -139,37 +139,12 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		$prefix = __CLASS__ . '-' . __FUNCTION__;
 
 		// Parse the args from add_settings_field();
-		$section_k = $args[ 'section_key' ];
-		$setting_k = $args[ 'setting_key' ];
-		$setting_v = $args[ 'setting' ];
+		$section_k = $args['section_key'];
+		$setting_k = $args['setting_key'];
+		$setting_v = $args['setting'];
 
 		// Is this setting disabled?
-		$maybe_disabled = FALSE;
-
-		// If we are not on the control install...
-		if( ! defined( 'CSS_TRICKS_WP_API_CONTROL' ) ) {
-	
-			// And this setting needs to come from the control install...
-			if( isset( $setting_v['is_remote'] ) ) {
-
-				// Then yeah, it's disabled!
-				$maybe_disabled = 'disabled';
-			
-			}
-		
-		// Yet if we ARE on the control...
-		} else {
-
-			// And this setting needs to come from the client installs...
-			if( ! isset( $setting_v['is_remote'] ) ) {
-
-				// Then yeah, it's disabled!
-				$maybe_disabled = 'disabled';
-			
-			}
-
-
-		}
+		$maybe_disabled = $this -> is_setting_disabled( $setting_v );
 
 		// The type of input.
 		$type = 'text';
@@ -183,7 +158,7 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 			$label = $setting_v['label'];
 		}
 		
-		// Some instructions.
+		// Some UI instructions.
 		$notes = '';
 		if( isset( $setting_v['notes'] ) ) {
 			$notes = $setting_v['notes'];       
@@ -193,32 +168,30 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		$name = $section_k . '[' . $setting_k . ']';
 
 		// Call the DB and get the current value for this setting.
-		$current_value = $this -> settings -> get_value( $section_k, $setting_k );
-		$current_value = esc_attr( $current_value );
-
+		$current_value = esc_attr( $this -> settings -> get_value( $section_k, $setting_k ) );
+	
+		// If you're a checkbox, your value attr is, like, always non-empty.
 		if( $type == 'checkbox' ) {
 
 			$value_attr = $setting_v['value'];
 
+		// Otherwise, your value attr is whatever is in the database at the moment.
 		} else {
 		
 			$value_attr = $current_value;
 		
 		}
 
-		// Should the setting be checked?
-		$maybe_checked = '';
-		if( $type == 'checkbox' ) {
-			$maybe_checked = checked( $current_value, $value_attr, FALSE );
-		}
-
 		// Handle select inputs.
 		if ( $type == 'select' ) {
 
+			// Will hold all the '<option>' elements.
 			$options_str = '';
 
+			// For each option...
 			foreach( $setting_v['options'] as $option_k => $option_v ) {
 
+				// Should it be selected?
 				$maybe_selected = selected( $option_k, $value, FALSE );
 
 				$options_str .= "<option value='$option_k' $maybe_selected>$option_v</option>";
@@ -230,6 +203,12 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		// Handle other input types.
 		} else {
 
+			// Should the setting be checked?
+			$maybe_checked = '';
+			if( $type == 'checkbox' ) {
+				$maybe_checked = checked( $current_value, $value_attr, FALSE );
+			}
+
 			$field = "<input type='$type' id='$name' name='$name' value='$value_attr' $maybe_disabled $maybe_checked>";
 
 		}
@@ -240,6 +219,44 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 				<p><i>$notes</i></p>
 			</label>
 		";
+
+		return $out;
+
+	}
+
+	/**
+	 * If a setting should be disabled, get the 'disabled' attribute.
+	 * 
+	 * @param  array   $setting A setting for our plugin.
+	 * @return string  Returns the disabled html attribute, or an empty string.
+	 */
+	function is_setting_disabled( $setting ) {
+
+		$out = '';
+
+		// If we are not on the control install...
+		if( ! defined( 'CSS_TRICKS_WP_API_CONTROL' ) ) {
+	
+			// And this setting needs to come from the control install...
+			if( isset( $setting['is_remote'] ) ) {
+
+				// Then yeah, it's disabled!
+				$out = 'disabled';
+			
+			}
+		
+		// Yet if we ARE on the control...
+		} else {
+
+			// And this setting needs to come from the client installs...
+			if( ! isset( $setting['is_remote'] ) ) {
+
+				// Then yeah, it's disabled!
+				$out = 'disabled';
+			
+			}
+			
+		}
 
 		return $out;
 
@@ -415,7 +432,7 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 
 		$saved = sprintf( esc_html__( 'Settings saved for %s.', 'css-tricks-wp-api-client' ), $this -> label );
 		$out = "
-			<div id='message' class='updated notice is-dismissible'>
+			<div class='updated notice is-dismissible'>
 				<p>$saved</p>
 			</div>
 		";
