@@ -362,7 +362,11 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		$content = sprintf( esc_html( 'Some network-level options for %s', 'CSS-Tricks-WP-API-Client' ), $label );
 
 		// The submit button for our settings form.
-		$submit = get_submit_button();
+		$submit_text = esc_attr__( 'Save local settings and refresh the cache for remote control settings.', 'css-tricks-wp-api-client' );
+		if( defined( 'CSS_TRICKS_WP_API_CONTROL' ) ) {
+			$submit_text = esc_attr__( 'Update remote control settings.', 'css-tricks-wp-api-client' );
+		}
+		$submit = get_submit_button( $submit_text );
 
 		// We're going OB because the WP Settings API always echoes.
 		ob_start();
@@ -409,7 +413,7 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 
 		$out = '';
 
-		$saved = sprintf( esc_html__( 'Settings saved for %s.', 'CSS-Tricks-WP-API-Client' ), $this -> label );
+		$saved = sprintf( esc_html__( 'Settings saved for %s.', 'css-tricks-wp-api-client' ), $this -> label );
 		$out = "
 			<div id='message' class='updated notice is-dismissible'>
 				<p>$saved</p>
@@ -421,5 +425,3 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 	}
 
 }
-
-?>

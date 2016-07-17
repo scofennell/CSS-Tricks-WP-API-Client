@@ -25,6 +25,8 @@ class CSS_Tricks_WP_API_Client_CRUD {
 		// Grab our class which handles settings from the control install.
 		$this -> remote_settings = new CSS_Tricks_WP_API_Client_Remote( $this -> settings_slug, $this -> settings_array );
 
+		$this -> values = $this -> get_values();
+
 	}
 
 	/**
@@ -77,7 +79,7 @@ class CSS_Tricks_WP_API_Client_CRUD {
 	 */
 	public function get_value( $section_k, $setting_k ) {
 
-		$values = $this -> get_values();
+		$values = $this -> values;
 
 		if( ! isset( $values[ $section_k ][ $setting_k ] ) ) {
 			return FALSE;
