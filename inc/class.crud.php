@@ -19,12 +19,12 @@ class CSS_Tricks_WP_API_Client_CRUD {
 	public function __construct( $settings_slug, $settings_array ) {
 
 		$this -> settings_slug   = $settings_slug;
-
 		$this -> settings_array  = $settings_array;
 
 		// Grab our class which handles settings from the control install.
 		$this -> remote_settings = new CSS_Tricks_WP_API_Client_Remote( $this -> settings_slug, $this -> settings_array );
 
+		// Grab the current database values for the settings.
 		$this -> values = $this -> get_values();
 
 	}
@@ -129,5 +129,3 @@ class CSS_Tricks_WP_API_Client_CRUD {
 	}
 
 }
-
-?>
