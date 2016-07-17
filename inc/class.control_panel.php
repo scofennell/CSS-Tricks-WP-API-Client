@@ -157,6 +157,18 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 			
 			}
 		
+		// Yet if we ARE on the control...
+		} else {
+
+			// And this setting needs to come from the client installs...
+			if( ! isset( $setting_v['is_remote'] ) ) {
+
+				// Then yeah, it's disabled!
+				$maybe_disabled = 'disabled';
+			
+			}
+
+
 		}
 
 		// The type of input.
