@@ -167,7 +167,7 @@ class CSS_Tricks_WP_API_Client_Remote {
 	}
 
 	/**
-	 * This is the main function that plugins would call.
+	 * This is the main function that other classes would call.
 	 * This gives you all your settings values, merged with the values from the control blog.
 	 */
 	function merge() {
