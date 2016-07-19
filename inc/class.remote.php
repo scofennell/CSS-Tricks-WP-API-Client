@@ -140,6 +140,8 @@ class CSS_Tricks_WP_API_Client_Remote {
 
 		if( ! is_array( $settings_array ) ) { return FALSE; }
 
+
+
 		// This will hold all of the settings that get their values from the control blog.
 		$remote_settings = array();
 
