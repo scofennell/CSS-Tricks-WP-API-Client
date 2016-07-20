@@ -21,9 +21,6 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 	 */
 	function __construct( $settings_slug, $settings_array, $label, $parent_page = 'settings.php', $capability = 'update_core' ) {
 
-		// Grab a bunch of helpful functions for CRUD'ing settings.
-		$this -> settings = new CSS_Tricks_WP_API_Client_CRUD( $settings_slug, $settings_array );
-
 		$this -> settings_slug  = $settings_slug;		
 		$this -> settings_array = $settings_array;
 		$this -> label          = $label;
@@ -63,6 +60,12 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 	 */
 	function add_settings() {
 
+		if( ! isset( $_GET['page'] ) ) { return FALSE; }
+		if( $_GET['page'] != $this -> settings_slug ) { return FALSE; }
+
+		// Grab a bunch of helpful functions for CRUD'ing settings.
+		$settings = new CSS_Tricks_WP_API_Client_CRUD( $this -> settings_slug, $this -> settings_array );
+
 		$page = $this -> settings_slug;
 
 		// For each settings section...
@@ -91,9 +94,10 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 
 				// An array of args to pass to the input callback.
 				$callback_args = array(
-					'section_key' => $section_k,
-					'setting_key' => $setting_k,
-					'setting'     => $setting
+					'section_key'   => $section_k,
+					'setting_key'   => $setting_k,
+					'setting'       => $setting,
+					'current_value' => $settings -> get_value( $section_k, $setting_k ),
 				);
 
 				// Register the input.
@@ -168,7 +172,7 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		$name = $section_k . '[' . $setting_k . ']';
 
 		// Call the DB and get the current value for this setting.
-		$current_value = esc_attr( $this -> settings -> get_value( $section_k, $setting_k ) );
+		$current_value = esc_attr( $args['current_value'] );
 	
 		// If you're a checkbox, your value attr is, like, always non-empty.
 		if( $type == 'checkbox' ) {
@@ -284,6 +288,9 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		// Check the nonce.
 		check_admin_referer( $this -> settings_slug . '-options' );
 
+		// Grab a bunch of helpful functions for CRUD'ing settings.
+		$settings = new CSS_Tricks_WP_API_Client_CRUD( $this -> settings_slug, $this -> settings_array );
+
 		// Will hold the new setting values.
 		$new_values = array();
 
@@ -320,7 +327,7 @@ class CSS_Tricks_WP_API_Client_Control_Panel {
 		}
 
 		// Update the database.
-		$this -> settings -> set_settings( $new_values );
+		$settings -> set_settings( $new_values );
 
 		// We made it!  Redirect the page back to our settings page, since the form is handled by some weird settings API url.
 		$this -> redirect();
