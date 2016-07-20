@@ -41,7 +41,7 @@ if ( ! function_exists( 'add_action' ) ) {
  * Start editing here!
  */
 
-// The url where your custom endpoint is, on the control blog. Similar to, http://example.com/wp-json/css_tricks_wp_api_control/v1/network_settings
+// The url where your custom endpoint is, on the control blog. Similar to, http://example.com/wp-json/css_tricks_wp_api_control/v1/network_settings.
 define( 'CSS_TRICKS_WP_API_CLIENT_CONTROL_URL', 'YOUR VALUE HERE' );
 
 // You'd get these from /wp-admin/users.php?page=rest-oauth1-apps on the control install.
